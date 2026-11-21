@@ -1,0 +1,81 @@
+name: X-Mark Scanner 1W
+
+on:
+  schedule:
+    - cron: "7 22,4,10,16 * * *"   # scanner A starts here
+    - cron: "37 1,7,13,19 * * *"  # scanner B starts here
+  workflow_dispatch:   # manual run starts both A and B
+
+permissions:
+  contents: read
+
+jobs:
+  scanner-a:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '7 22,4,10,16 * * *' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    concurrency:
+      group: scanner-a
+      cancel-in-progress: false
+    steps:
+      - name: Get requirements (this public repo)
+        uses: actions/checkout@v4
+      - name: Get scanner code (private repo)
+        uses: actions/checkout@v4
+        with:
+          repository: Bavajann2458/xmark-w-private
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: private
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Run scanner
+        env:
+          PYTHONUNBUFFERED: "1"
+          QUIET: "1"
+          INSTANCE: "0"
+          SLOT_HOURS: "3"
+          MAX_RUNTIME_MIN: "345"
+          HTF: "1w"
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python private/s_xmark_scanner.py
+
+  scanner-b:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '37 1,7,13,19 * * *' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    concurrency:
+      group: scanner-b
+      cancel-in-progress: false
+    steps:
+      - name: Get requirements (this public repo)
+        uses: actions/checkout@v4
+      - name: Get scanner code (private repo)
+        uses: actions/checkout@v4
+        with:
+          repository: Bavajann2458/xmark-w-private
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: private
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Run scanner
+        env:
+          PYTHONUNBUFFERED: "1"
+          QUIET: "1"
+          INSTANCE: "1"
+          SLOT_HOURS: "3"
+          MAX_RUNTIME_MIN: "345"
+          HTF: "1w"
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python private/s_xmark_scanner.py
